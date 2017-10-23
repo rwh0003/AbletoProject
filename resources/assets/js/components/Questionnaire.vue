@@ -41,11 +41,27 @@
                     </ul>
 
                     <div class="panel-footer">
-                        <button type="submit" class="btn btn-primary" @click="saveEntries()">Save Entry</button>
+                        <button type="button" 
+                                disabled
+                                class="btn btn-primary disabled" 
+                                @click="saveEntries()"
+                                v-if="!canSubmitAnswers()">
+                            Save Entry
+                        </button>
+                        <button type="button" 
+                                class="btn btn-primary" 
+                                @click="saveEntries()"
+                                v-if="canSubmitAnswers()">
+                            Save Entry
+                        </button>
 
-                        <span class="text-success" v-if="saved">
+                        <span class="text-success response-msg" v-if="saved">
                             <span class="glyphicon glyphicon-ok" aria-hidden="true" v-if="saved"></span>
                             Saved!
+                        </span>
+
+                        <span class="text-warning response-msg" v-if="isDuplicate">
+                            No changes detected
                         </span>
                     </div>
                 </div>
@@ -63,7 +79,8 @@
                 entryDate: null,
                 displayDate: null,
                 isLoading: true,
-                saved: false
+                saved: false,
+                isDuplicate: false
             };
         },
 
@@ -112,6 +129,7 @@
             },
 
             getEntries() {
+
                 // Scope questionnaire for use inside axios call
                 var _this = this;
 
@@ -136,6 +154,7 @@
             },
 
             getQuestions() {
+
                 // Scope questionnaire for use inside axios call
                 var _this = this;
 
@@ -152,10 +171,14 @@
             },
 
             saveEntries() {
+
                 // Scope questionnaire for use inside axios call
                 var _this = this;
 
+                // Set status variables
                 this.isLoading = true;
+                this.saved = false;
+                this.isDuplicate = false;
 
                 // Format data for save
                 var data = {
@@ -166,11 +189,18 @@
                 // Save entry
                 axios.post('/questionnaire/save', data)
                      .then(function(res) {
-                        console.log(res);
-                        _this.saved = true;
 
+                        // Set appropriate response message
+                        if (res.data.msg === "Entry already exists.") {
+                            _this.isDuplicate = true;
+                        } else {
+                            _this.saved = true;
+                        }
+
+                        // Display message for 2 seconds
                         setTimeout(function(){
                             _this.saved = false;
+                            _this.isDuplicate = false;
                         }, 2000);
                      })
                      .catch(function(err) {
@@ -182,6 +212,25 @@
 
             setAnswer(questionId, answerId) {
                 this.answers[questionId] = answerId;
+            },
+
+            canSubmitAnswers() {
+
+                // Return false if all three questions are not answered
+                if (this.answers.length < 4) {
+                    return false;
+                }
+
+                // Check for undefined indices for all three questions
+                for (var i = 1; i < 4; i++) {
+                    // If undefined, count is 0
+                    if (typeof this.answers[i] === 'undefined') {
+                        return false;
+                    }
+                }
+
+                // Answers has all three questions answered and can be submitted
+                return true;
             }
         }
     }
