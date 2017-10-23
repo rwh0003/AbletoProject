@@ -17,6 +17,7 @@ class EntryController extends Controller
     public function saveEntries(Request $request)
     {
         $data = $request->all();
+        $isDuplicate = true;
 
         // Loop over each entry in the answers array, format data, and create/update
     	foreach ($data['answers'] as $questionId => $answerId) {
@@ -45,12 +46,28 @@ class EntryController extends Controller
             // If entry exists, update answer
             // Else create new entry
             if (count($entry)) {
-                $entry->answer_id = $entryData['answer_id'];
-                $entry->save();
+
+                // Only update if answer is different
+                if ($entry->answer_id != $entryData['answer_id']) {
+                    $entry->answer_id = $entryData['answer_id'];
+                    $entry->save();
+
+                    $isDuplicate = false;
+                }
+
             } else {
-        		Entry::create($entryData);
+                Entry::create($entryData);
+
+                $isDuplicate = false;
             }
-    	}
+        }
+
+        // If answer is duplicate, return appropriate json msg
+        if ($isDuplicate) {
+            return response()->json(['msg' => 'Entry already exists.'], 200);
+        }
+
+        return response()->json(['msg' => 'Entry successfully saved.'], 200);
     }
 
     /**
