@@ -18,6 +18,11 @@ class EntryTest extends TestCase
 
         // User for testing purposes
         $this->testUser = User::where('name', 'Test User')->first();
+
+        // Delete test entries for testing purposes
+        $testEntries = Entry::where('user_id', $this->testUser->id)->get();
+
+        foreach ($testEntries as $entry) { $entry->delete(); }
     }
 
     /**
@@ -39,34 +44,14 @@ class EntryTest extends TestCase
         // Entry creation should succeed
         $this->actingAs($this->testUser)
              ->json('POST', '/questionnaire/save', $data)
-             ->assertStatus(200);
+             ->assertStatus(200)
+             ->assertJson(['msg' => 'Entry successfully saved.']);
 
         // Entry creation with same data should fail gracefully.
-        // It will return a 200, however
-    }
-
-    /**
-     * Testing duplicate entry creation
-     *
-     * @return void
-     */
-    public function testDuplicateEntry()
-    {
-    	// Create new entry
-    	$newEntry = Entry::create([
-			'date' => date('Y-m-d'),
-			'answer_id' => 1,
-			'question_id' => 1,
-			'user_id' => $this->testUser->id
-		]);
-
-    	$duplicateEntry = Entry::create([
-			'date' => date('Y-m-d'),
-			'answer_id' => 1,
-			'question_id' => 1,
-			'user_id' => $this->testUser->id
-		])->assertFalse();
-
-        $this->assertNull($duplicateEntry);
+        // It will return a 200 with a different message
+        $this->actingAs($this->testUser)
+             ->json('POST', '/questionnaire/save', $data)
+             ->assertStatus(200)
+             ->assertJson(['msg' => 'Entry already exists.']);
     }
 }
