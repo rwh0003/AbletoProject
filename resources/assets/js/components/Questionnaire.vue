@@ -87,10 +87,17 @@
         props: ['userid'],
 
         created() {
-            this.setDate();
+            this.init();
         },
 
         methods: {
+            init() {
+
+                // Initiate waterfall function call to get data
+                this.setDate();
+
+            },
+
             setDate(dateDir = null) {
                 this.isLoading = true;
 
